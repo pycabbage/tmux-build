@@ -1,0 +1,60 @@
+name: Build tmux
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  prepare_builder:
+    name: Prepare builder container
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      DOCKER_REGISTRY: ghcr.io
+    outputs:
+      image: ${{ steps.meta.outputs.tags[0] }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-config: .github/buildkit.toml
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ github.repository }}/builder
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          push: ${{ github.event_name != 'pull_request' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+  build:
+    name: Build tmux
+    runs-on: ubuntu-latest
+    needs: [prepare_builder]
+    if: ${{ false }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build tmux
+        run: docker compose up
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tmux-3.4
+          path: ${{ github.workspace }}/output/tmux
