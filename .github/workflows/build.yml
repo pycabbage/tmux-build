@@ -35,9 +35,9 @@ jobs:
           images: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}
           tags: |
             type=sha
-            type=ref,event=tag,enable=${{ github.event_name == 'push' }}
-            type=ref,event=branch,enable=${{ github.event_name == 'push' }}
-            type=ref,event=pr,enable=${{ github.event_name == 'pull_request' }}
+            type=ref,event=tag
+            type=ref,event=branch
+            type=ref,event=pr
           flavor: |
             latest=${{ github.event_name != 'pull_request' }}
       - name: Login to GitHub Container Registry
@@ -64,6 +64,12 @@ jobs:
           subject-name: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
           push-to-registry: true
+      - name: Test image tag
+        run: |
+          echo Image tags
+          echo \"${{ steps.meta.outputs.tags }}\"
+          echo First tag
+          echo \"${{ steps.meta.outputs.tags[0] }}\"
 
   build:
     name: "Build tmux (tmux-${{ matrix.tmux }})"
