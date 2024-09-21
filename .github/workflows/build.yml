@@ -12,6 +12,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
+      attestations: write
     env:
       DOCKER_REGISTRY: ghcr.io
     outputs:
@@ -25,7 +27,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           buildkitd-config: .github/buildkit.toml
-      - uses: sigstore/cosign-installer@v3
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
@@ -49,16 +50,19 @@ jobs:
         id: build-and-push
         with:
           push: true
+          target: final
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      - name: Sign the published Docker image with GitHub OIDC Token
-        env:
-          TAGS: ${{ steps.meta.outputs.tags }}
-          DIGEST: ${{ steps.build-and-push.outputs.digest }}
-        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+      - name: Attest
+        uses: actions/attest-build-provenance@v1
+        id: attest
+        with:
+          subject-name: ${{ steps.meta.outputs.tags }}
+          subject-digest: ${{ steps.build-and-push.outputs.digest }}
+          push-to-registry: true
 
   build:
     name: Build tmux
@@ -75,7 +79,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Build tmux
-        run: docker compose up
+        run: |
+          docker run -it --rm \
+            -e LIBEVENT_VERSION=${{ matrix.libevent }} \
+            -e NCURSES_VERSION=${{ matrix.ncurses }} \
+            -e TMUX_VERSION=${{ matrix.tmux }} \
+            ${{ needs.prepare_builder.outputs.image }}
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

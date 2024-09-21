@@ -2,6 +2,8 @@ services:
   build:
     build:
       context: .
+      target: final
+    image: ghcr.io/pycabbage/tmux-build/builder
     environment:
       - LIBEVENT_VERSION=2.1.12-stable
       - NCURSES_VERSION=6.5
