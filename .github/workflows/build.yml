@@ -70,7 +70,12 @@ jobs:
         id: extract
         with:
           script: |
-            console.log(JSON.stringify(context, null, 2))
+            const tags = env.DOCKER_METADATA_OUTPUT_TAGS
+            console.log("=== tags ===")
+            console.log(tags)
+            console.log("============")
+            console.log(typeof tags)
+            console.log("============")
 
   build:
     name: "Build tmux (tmux-${{ matrix.tmux }})"
