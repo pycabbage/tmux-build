@@ -1,0 +1,5 @@
+{
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow.json": "file:///home/cabbage/tmux-build/.github/workflows/build.yml"
+  }
+}
