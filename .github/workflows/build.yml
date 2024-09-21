@@ -4,6 +4,7 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    
 
 jobs:
   prepare_builder:
@@ -35,9 +36,9 @@ jobs:
           images: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}
           tags: |
             type=sha
-            type=ref,event=tag
-            type=ref,event=branch
-            type=ref,event=pr
+            type=ref,event=tag,enable=${{ github.event_name == 'push' }}
+            type=ref,event=branch,enable=${{ github.event_name == 'push' }}
+            type=ref,event=pr,enable=${{ github.event_name == 'pull_request' }}
           flavor: |
             latest=${{ github.event_name != 'pull_request' }}
       - name: Login to GitHub Container Registry
@@ -65,11 +66,11 @@ jobs:
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
           push-to-registry: true
       - name: Test image tag
-        run: |
-          echo Image tags
-          echo \"${{ steps.meta.outputs.tags }}\"
-          echo First tag
-          echo \"${{ steps.meta.outputs.tags[0] }}\"
+        uses: actions/github-script@v7
+        id: extract
+        with:
+          script: |
+            console.log(JSON.stringify(context, null, 2))
 
   build:
     name: "Build tmux (tmux-${{ matrix.tmux }})"
