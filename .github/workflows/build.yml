@@ -16,6 +16,7 @@ jobs:
       attestations: write
     env:
       DOCKER_REGISTRY: ghcr.io
+      DOCKER_IMAGE_NAME: ${{ github.repository }}/builder
     outputs:
       image: ${{ steps.meta.outputs.tags[0] }}
     steps:
@@ -31,7 +32,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}/builder
+          images: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}
           tags: |
             type=sha
             type=ref,event=tag,enable=${{ github.event_name == 'push' }}
@@ -39,7 +40,7 @@ jobs:
             type=ref,event=pr,enable=${{ github.event_name == 'pull_request' }}
           flavor: |
             latest=${{ github.event_name != 'pull_request' }}
-      - name: Login to Docker Hub
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.DOCKER_REGISTRY }}
@@ -60,7 +61,7 @@ jobs:
         uses: actions/attest-build-provenance@v1
         id: attest
         with:
-          subject-name: ${{ steps.meta.outputs.tags }}
+          subject-name: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
           push-to-registry: true
 
@@ -68,7 +69,6 @@ jobs:
     name: Build tmux
     runs-on: ubuntu-latest
     needs: [prepare_builder]
-    if: ${{ false }}
     strategy:
       matrix:
         include:
