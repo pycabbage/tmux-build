@@ -19,7 +19,7 @@ jobs:
       DOCKER_REGISTRY: ghcr.io
       DOCKER_IMAGE_NAME: ${{ github.repository }}/builder
     outputs:
-      image: ${{ steps.meta.outputs.tags[0] }}
+      image: ${{ steps.extract.outputs.image }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,17 +66,9 @@ jobs:
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
           push-to-registry: true
       - name: Test image tag
-        uses: actions/github-script@v7
         id: extract
-        with:
-          script: |
-            const { env } = import('process')
-            const tags = env.DOCKER_METADATA_OUTPUT_TAGS
-            console.log("=== tags ===")
-            console.log(tags)
-            console.log("============")
-            console.log(typeof tags)
-            console.log("============")
+        # 
+        run: echo image=$(echo $DOCKER_METADATA_OUTPUT_TAGS | jq -R -r -s -c 'split("\n") | .[0] as $first | map(select(contains("sha-"))) | if length > 0 then .[0] else $first end') >> $GITHUB_OUTPUT
 
   build:
     name: "Build tmux (tmux-${{ matrix.tmux }})"
